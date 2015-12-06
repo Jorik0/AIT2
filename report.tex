@@ -30,6 +30,6 @@ All elevators move to floor 9 first, as that is the first floor a person presses
 
 The reason the elevators do not stop to pick up other people along the way is that the agents only change their goals when they are docked (in this case when they reach floor 9), as atFloor (used in onRoute, which in turn is used when changing goals because of fButtonOn) is only true when directly at a floor.
 
-The reason the elevator that brings the person from the 9th to the 1st floor indicates that it will go down when it reaches the ground floor is that it performed the action goto(1,down), as the elevator was going to go in the down direction when it was at the floor where the person got on and for that reason added the atFloor(1),dir(down) goal (forall bel(percept(eButtonOn(Level)), dir(Dir)) do adopt(atFloor(Level), dir(Dir)).). 
+The reason the elevator that brings the person from the 9th to the 1st floor indicates that it will go down when it reaches the ground floor is that it performed the action goto(1,down), as the elevator was going to go in the down direction when it was at the floor where the person got on and for that reason added the atFloor(1),dir(down) goal (forall bel(percept(eButtonOn(Level)), dir(Dir)) do adopt(atFloor(Level), dir(Dir)).). In other words, as the direction was down it will still go down even though this doesn't exists for this level.
 \end{document}
 
