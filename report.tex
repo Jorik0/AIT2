@@ -29,5 +29,7 @@
 All elevators move to floor 9 first, as that is the first floor a person presses the floor button on. Pressing the button generates a fButtonOn percept, which in turn leads (after adding the info to the believe state) to the agents adding a goal to go this floor (with the correct direction). The agents then decide to fulfill this goal by going to floor 9, as they don't have any other goals yet. The agents don't tell each other where they going, so they all go to the same floor instead of adapting their plans to each other.
 
 The reason the elevators do not stop to pick up other people along the way is that the agents only change their goals when they are docked (in this case when they reach floor 9), as atFloor (used in onRoute, which in turn is used when changing goals because of fButtonOn) is only true when directly at a floor.
+
+The reason the elevator that brings the person from the 9th to the 1st floor indicates that it will go down when it reaches the ground floor is that it performed the action goto(1,down), as the elevator was going to go in the down direction when it was at the floor where the person got on and for that reason added the atFloor(1),dir(down) goal (forall bel(percept(eButtonOn(Level)), dir(Dir)) do adopt(atFloor(Level), dir(Dir)).). 
 \end{document}
 
