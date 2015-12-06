@@ -25,5 +25,9 @@
 \begin{document}
 \maketitle	
 
+\section{Assignment A}
+All elevators move to floor 9 first, as that is the first floor a person presses the floor button on. Pressing the button generates a fButtonOn percept, which in turn leads (after adding the info to the believe state) to the agents adding a goal to go this floor (with the correct direction). The agents then decide to fulfill this goal by going to floor 9, as they don't have any other goals yet. The agents don't tell each other where they going, so they all go to the same floor instead of adapting their plans to each other.
+
+The reason the elevators do not stop to pick up other people along the way is that the agents only change their goals when they are docked (in this case when they reach floor 9), as atFloor (used in onRoute, which in turn is used when changing goals because of fButtonOn) is only true when directly at a floor.
 \end{document}
 
