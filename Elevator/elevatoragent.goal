@@ -7,8 +7,6 @@ init module {
 		
 		%first check if there even is a task with ID id (to prevent prolog errors), then check if we bid on it
 		answered(ID) :- task(_,_,ID), sent(_,bid(ID,_)).
-				
-		closer(Level,OtherLevel) :- carPosition(Pos), D1 is abs(Level - Pos), D2 is abs(OtherLevel - Pos), D1 < D2.
 	}
 	beliefs{
 		% The direction that will be shown to the people at the next stop.
@@ -37,27 +35,30 @@ init module {
 	
 main module {
 	program {
+		if bel(assigned(ID), task(Floor,Dir,ID), atFloor(Floor), dir(Dir), not(sent(manager,completed(ID)))) then
+			(manager).send(completed(ID)).
+		
 		if a-goal(answered(ID)), bel(Bid is random(100)) then
 			(manager).send(bid(ID,Bid)).		
 		
-		%Goto the closest floor we want to go to (we do not delete goingto's untill we reach a floor, but this has no effect on which floor we choose to go to)
-		if a-goal(atFloor(Level), dir(Dir)), bel(not((goingTo(L,_), not(closer(Level,L))))), not(a-goal(atFloor(OtherLevel), dir(_), closer(OtherLevel,Level))) then
-			goto(Level,Dir) + insert(goingTo(Level,Dir)).
+		
+		% Goto the nearest floor that the agent wants to go to.
+ 		if a-goal( atFloor(Level), dir(Dir) ),
+ 			bel( atFloor(Here), Distance is abs(Level-Here) ),
+ 		    not(a-goal( atFloor(OtherLevel),
+ 				OtherDistance is abs(OtherLevel-Here), OtherDistance<Distance) )
+ 		then goto(Level, Dir).
 	}
 }
 	
 event module {
-	program {
-		% The atFloor(Level) percept is received only when elevator has stopped at a floor Level.
-		forall bel( percept(atFloor(Level)), not(atFloor(Level)) ,dir(Dir)) do 
-			insert( atFloor(Level) ) + (manager).send(fButtonOff(Level, Dir)).
+	program {		
+		% The atFloor(Level) percept is received only when elevator has stopped at a floor Level (in this case the floorbutton is turned off).
+		forall bel( percept(atFloor(Level)), not(atFloor(Level))) do 
+			insert( atFloor(Level) ).
 			
 		forall bel( atFloor(Level), not(percept(atFloor(Level))) ) do
 			delete( atFloor(Level) ).
-			
-		%When stopped at a floor level, delete all acrued goingTo's
-		forall bel(atFloor(Level), goingTo(L,D)) do
-			delete(goingTo(L,D)).
 			
 		%Process people(N) (the amount of people in the car)	
 		forall bel(percept(people(N)), people(Old)) do
@@ -72,7 +73,7 @@ event module {
 			insert(floorCount(N)).
 			
 		%Process carPosition(L), L is a floating point position indicator that also updates when the car is moving
-		forall bel(percept(carPosition(L)), carPosition(Old)) do
+		forall bel(percept(carPosition(L)), carPosition(Old), L \= Old) do
 			delete(carPosition(Old)) + insert(carPosition(L)).
 			
 		%Process timefactor(T)	
@@ -97,7 +98,7 @@ event module {
 		
 		%Process task assignments
 		forall bel(received(manager,imp(completed(ID))), task(Level,Dir,ID)) do 
-			adopt(atFloor(Level),dir(Dir)) + delete(received(manager,imp(completed(ID)))).
+			adopt(atFloor(Level),dir(Dir)) + insert(assigned(ID)) + delete(received(manager,imp(completed(ID)))).
 		
 		%Process eButtonOn(Level)
 		forall bel(percept(eButtonOn(Level)),dir(Dir)) do

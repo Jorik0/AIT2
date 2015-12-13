@@ -1,10 +1,14 @@
 init module {
 	knowledge{
+		%Processed is true if the task is assigned to an agent or has been finished
 		processed(ID) :- task(Level,Dir,ID), sent(_,imp(completed(ID))).
 		processed(ID) :- completed(ID).
+		
+	    %Only true if all bids have been received and if Bid is the maximum bid
 		bestBid(ID,X,Bid) :- bid(ID,X,Bid), not((agent(X),not(me(x)),not(bid(ID,X,_)))), not((bid(ID,_,OtherBid), OtherBid > Bid)).
 	}
 	beliefs{
+		%Tracks Task IDs
 		currentID(0).
 	}
 	goals{
@@ -12,32 +16,36 @@ init module {
 }
 
 main module{
-	program {		
+	program {
+		%We only process one task at a time
 		if bel(not(processing(X))), a-goal(processed(ID)) then
 			insert(processing(ID)).
 		
+		%Requests bids
 		forall bel(processing(ID), agent(X), not(me(X)), not(sent(X,int(bid(_,_,ID)))), task(Level,Dir,ID)) do
 			(X).send(?bid(Level,Dir,ID)).
-			
+		
+		%If the task has been completed already, stop processing it
 		if bel(processing(ID), completed(ID)) then
 			delete(processing(ID)).
 			
+		%Assign the task to the highest bidder
 		if bel(processing(ID), bestBid(ID,X,Bid)) then
-			(X).send(!completed(ID)) + delete(processing(ID)).	
-			
-	    if bel(task(Floor,Dir,ID), not(completed(ID))) then
-	    	print(Floor).
+			(X).send(!completed(ID)) + delete(processing(ID)).
 	}
 }
 
 event module {
-	program {			
-		forall bel(received(X,fButtonOff(Level,Dir)), task(Level,Dir,ID), not(completed(ID))) do
-			insert(completed(ID)).
+	program {
+		forall bel(received(_,fButtonOn(Level,Dir)), not(fButtonOn(Level,Dir))) do
+			insert(fButtonOn(Level,Dir)).
+			
+		forall bel(received(_,fButtonOff(Level,Dir)), fButtonOn(Level,Dir)) do
+			delete(fButtonOn(Level,Dir)).
 		
 		%Process incoming task messages (fButtonOn)
-		forall bel(received(_,fButtonOn(Level,Dir)), not((task(Level,Dir,TID), not(completed(TID)))), currentID(ID), NID is ID + 1) do
-			insert(task(Level,Dir,ID)) + adopt(processed(ID)) + delete(currentID(ID)) + insert(currentID(NID)).
+		if bel(fButtonOn(Level,Dir), not((task(Level,Dir,TID), not(completed(TID)))), currentID(ID), NID is ID + 1) then
+			insert(task(Level,Dir,ID)) + adopt(processed(ID)) + delete(currentID(ID)) + insert(currentID(NID)) + insert(fButtonOn(Level,Dir)).
 			
 		%We get the same information from multiple agents, so we need to remove the messages seperately
 		forall bel(received(Sender,fButtonOn(Level,Dir))) do
@@ -45,8 +53,13 @@ event module {
 						
 		forall bel(received(Sender,fButtonOff(Level,Dir))) do
 			delete(received(Sender,fButtonOff(Level,Dir))).
-			
+		
+		%Process incoming bids
 		forall bel(received(X,bid(ID,Bid))) do
 			insert(bid(ID,X,Bid)) + delete(received(X,bid(ID,Bid))).
+			
+		%Process incoming completed messages
+		if bel(received(_,completed(ID)), not(completed(ID))) then
+			insert(completed(ID)).
 	}
 }
