@@ -7,9 +7,7 @@ init module {
 		
 		%first check if there even is a task with ID id (to prevent prolog errors), then check if we bid on it
 		answered(ID) :- task(_,_,ID), sent(_,bid(ID,_)).
-		
-		completed(ID) :- assigned(ID), task(Floor,Dir,ID), atFloor(Floor), dir(Dir).
-		
+				
 		closer(Level,OtherLevel) :- carPosition(Pos), D1 is abs(Level - Pos), D2 is abs(OtherLevel - Pos), D1 < D2.
 	}
 	beliefs{
@@ -39,10 +37,7 @@ init module {
 	
 main module {
 	program {
-		if bel(completed(ID), not(sent(manager,completed(ID)))) then
-			(manager).send(completed(ID)).
-		
-		if a-goal(answered(ID)), bel(Bid is random(10)) then
+		if a-goal(answered(ID)), bel(Bid is random(100)) then
 			(manager).send(bid(ID,Bid)).		
 		
 		%Goto the closest floor we want to go to (we do not delete goingto's untill we reach a floor, but this has no effect on which floor we choose to go to)
@@ -53,11 +48,9 @@ main module {
 	
 event module {
 	program {
-		%%%%% Percept Processing %%%%%
-		
 		% The atFloor(Level) percept is received only when elevator has stopped at a floor Level.
-		forall bel( percept(atFloor(Level)), not(atFloor(Level)) ) do 
-			insert( atFloor(Level) ) .
+		forall bel( percept(atFloor(Level)), not(atFloor(Level)) ,dir(Dir)) do 
+			insert( atFloor(Level) ) + (manager).send(fButtonOff(Level, Dir)).
 			
 		forall bel( atFloor(Level), not(percept(atFloor(Level))) ) do
 			delete( atFloor(Level) ).
@@ -91,7 +84,7 @@ event module {
 			insert( fButtonOn(Level,Dir) )  + (manager).send(fButtonOn(Level, Dir)).
 			
 		forall bel( fButtonOn(Level,Dir), not(percept(fButtonOn(Level,Dir))) ) do 
-			delete( fButtonOn(Level,Dir) ).
+			delete( fButtonOn(Level,Dir) ) + (manager).send(fButtonOff(Level, Dir)).
 		
 		% The doorState percept is received only if the door state has changed.
 		% So we do not need to check whether the New value is different from the Old value to avoid unnecessary updates.
@@ -104,7 +97,7 @@ event module {
 		
 		%Process task assignments
 		forall bel(received(manager,imp(completed(ID))), task(Level,Dir,ID)) do 
-			adopt(atFloor(Level),dir(Dir)) + insert(assigned(ID)) + delete(received(manager,imp(completed(ID)))).
+			adopt(atFloor(Level),dir(Dir)) + delete(received(manager,imp(completed(ID)))).
 		
 		%Process eButtonOn(Level)
 		forall bel(percept(eButtonOn(Level)),dir(Dir)) do
