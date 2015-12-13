@@ -4,6 +4,13 @@ init module {
 		% Note that onRoute only succeeds when the elevator car is "docked", i.e. atFloor(Here) succeeds for
 		% some floor (see also the belief section).
 		onRoute(Level, Dir) :- atFloor(Here), dir(Dir), Diff is Level-Here, (Diff<0 -> Dir=down; Dir=up).
+		
+		%first check if there even is a task with ID id (to prevent prolog errors), then check if we bid on it
+		answered(ID) :- task(_,_,ID), sent(_,bid(ID,_)).
+		
+		completed(ID) :- assigned(ID), task(Floor,Dir,ID), atFloor(Floor), dir(Dir).
+		
+		closer(Level,OtherLevel) :- carPosition(Pos), D1 is abs(Level - Pos), D2 is abs(OtherLevel - Pos), D1 < D2.
 	}
 	beliefs{
 		% The direction that will be shown to the people at the next stop.
@@ -12,9 +19,11 @@ init module {
 		dir(down).
 		% Initially, it is unknown whether doors are open or closed.
 		doorState(unknown).
+		people(0).
+		timefactor(0).
+		carPosition(0).
 	}
 	goals{
-		atFloor(1), dir(up).
 	}
 	actionspec{
 		% The action goto(Level, Dir) moves the elevator car to floor Level. It can
@@ -23,19 +32,22 @@ init module {
 		% When the elevator arrives at the requested floor, the Dir light will turn on.
 		goto(Level, Dir) {
 		   pre{ atFloor(Here), dir(DirNow), doorState(closed) }
-		   post{ not(dir(DirNow)), dir(Dir) }
+		   post{ not(dir(DirNow)), dir(Dir)}
 		}
 	}
 }
 	
 main module {
 	program {
-		% Goto the nearest floor that the agent wants to go to.
-		if a-goal( atFloor(Level), dir(Dir) ),
-			bel( atFloor(Here), Distance is abs(Level-Here) ),
-		    not(a-goal( atFloor(OtherLevel),
-				OtherDistance is abs(OtherLevel-Here), OtherDistance<Distance) )
-		then goto(Level, Dir).
+		if bel(completed(ID), not(sent(manager,completed(ID)))) then
+			(manager).send(completed(ID)).
+		
+		if a-goal(answered(ID)), bel(Bid is random(10)) then
+			(manager).send(bid(ID,Bid)).		
+		
+		%Goto the closest floor we want to go to (we do not delete goingto's untill we reach a floor, but this has no effect on which floor we choose to go to)
+		if a-goal(atFloor(Level), dir(Dir)), bel(not((goingTo(L,_), not(closer(Level,L))))), not(a-goal(atFloor(OtherLevel), dir(_), closer(OtherLevel,Level))) then
+			goto(Level,Dir) + insert(goingTo(Level,Dir)).
 	}
 }
 	
@@ -44,17 +56,59 @@ event module {
 		%%%%% Percept Processing %%%%%
 		
 		% The atFloor(Level) percept is received only when elevator has stopped at a floor Level.
-		forall bel( percept(atFloor(Level)), not(atFloor(Level)) ) do insert( atFloor(Level) ).
-		forall bel( atFloor(Level), not(percept(atFloor(Level))) ) do delete( atFloor(Level) ).
+		forall bel( percept(atFloor(Level)), not(atFloor(Level)) ) do 
+			insert( atFloor(Level) ) .
+			
+		forall bel( atFloor(Level), not(percept(atFloor(Level))) ) do
+			delete( atFloor(Level) ).
+			
+		%When stopped at a floor level, delete all acrued goingTo's
+		forall bel(atFloor(Level), goingTo(L,D)) do
+			delete(goingTo(L,D)).
+			
+		%Process people(N) (the amount of people in the car)	
+		forall bel(percept(people(N)), people(Old)) do
+			 delete(people(Old)) + insert(people(N)).
+			 
+		%Process capacity(N) (only send at start of simulation)
+		forall bel(percept(capacity(N))) do
+			insert(capacity(N)).
+			
+		%Process floorCount(N) (only send at start of simulation)
+		forall bel(percept(floorCount(N))) do
+			insert(floorCount(N)).
+			
+		%Process carPosition(L), L is a floating point position indicator that also updates when the car is moving
+		forall bel(percept(carPosition(L)), carPosition(Old)) do
+			delete(carPosition(Old)) + insert(carPosition(L)).
+			
+		%Process timefactor(T)	
+		forall bel(percept(timefactor(T)), timefactor(Old), T \= Old) do
+			delete(timefactor(Old)) + insert(timefactor(T)).
 				
 		% The fButton(Level,Dir) percept indicates that the up or down (Dir) button on floor Level has been pressed.
-		forall bel( percept(fButtonOn(Level,Dir)), not(fButtonOn(Level,Dir))) do insert( fButtonOn(Level,Dir) )  + (manager).send(fButtonOn(Level, Dir)).
-		forall bel( fButtonOn(Level,Dir), not(percept(fButtonOn(Level,Dir))) ) do delete( fButtonOn(Level,Dir) ).
+		forall bel( percept(fButtonOn(Level,Dir)), not(fButtonOn(Level,Dir))) do 
+			insert( fButtonOn(Level,Dir) )  + (manager).send(fButtonOn(Level, Dir)).
+			
+		forall bel( fButtonOn(Level,Dir), not(percept(fButtonOn(Level,Dir))) ) do 
+			delete( fButtonOn(Level,Dir) ).
 		
 		% The doorState percept is received only if the door state has changed.
 		% So we do not need to check whether the New value is different from the Old value to avoid unnecessary updates.
-		forall bel( percept(doorState(New)), doorState(Old) ) do insert( not(doorState(Old)), doorState(New) ).
+		forall bel( percept(doorState(New)), doorState(Old) ) do 
+			insert( not(doorState(Old)), doorState(New) ).
 
-
+		% Process bid requests
+		forall bel(received(manager,int(bid(Level,Dir,ID)))) do 
+			insert(task(Level,Dir,ID)) + adopt(answered(ID)) + delete(received(manager,int(bid(Level,Dir,ID)))).
+		
+		%Process task assignments
+		forall bel(received(manager,imp(completed(ID))), task(Level,Dir,ID)) do 
+			adopt(atFloor(Level),dir(Dir)) + insert(assigned(ID)) + delete(received(manager,imp(completed(ID)))).
+		
+		%Process eButtonOn(Level)
+		forall bel(percept(eButtonOn(Level)),dir(Dir)) do
+			adopt(atFloor(Level),dir(Dir)).
+			
 	}
 }

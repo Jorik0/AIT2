@@ -1,18 +1,42 @@
-main module{
-	program{
+init module {
+	knowledge{
+		processed(ID) :- task(Level,Dir,ID), sent(_,imp(completed(ID))).
+		bestBid(ID,X,Bid) :- bid(ID,X,Bid), not((agent(X),not(me(x)),not(bid(ID,X,_)))), not((bid(ID,_,OtherBid), OtherBid > Bid)).
+	}
+	beliefs{
+		currentID(0).
+	}
+	goals{
+	}
+}
 
+main module{
+	program {		
+		if bel(not(processing(X))), a-goal(processed(ID)) then
+			insert(processing(ID)).
+		
+		forall bel(processing(ID), agent(X), not(me(X)), not(sent(X,int(bid(_,_,ID)))), task(Level,Dir,ID)) do
+			(X).send(?bid(Level,Dir,ID)).
+			
+		if bel(processing(ID), bestBid(ID,X,Bid)) then
+			(X).send(!completed(ID)) + delete(processing(ID)).	
 	}
 }
 
 event module {
 	program {
-		forall bel(received(Sender,fButtonOn(Level,Dir)), not(fButtonOn(Level,Dir))) do
-			insert(fButtonOn(Level,Dir)).
+		%Process incoming task messages (fButtonOn)
+		forall bel(received(_,fButtonOn(Level,Dir)), not((task(Level,Dir,TID), not(completed(TID)))), currentID(ID), NID is ID + 1) do
+			insert(task(Level,Dir,ID)) + adopt(processed(ID)) + delete(currentID(ID)) + insert(currentID(NID)).
 			
+		%We get the same information from multiple agents, so we need to remove the messages seperately
 		forall bel(received(Sender,fButtonOn(Level,Dir))) do
 			delete(received(Sender,fButtonOn(Level,Dir))).	
-		
-		forall bel(fButtonOn(Level,Dir),not(processed(Level,Dir))) do
-			adopt(processed(Level,Dir)).
+			
+		forall bel(received(X,bid(ID,Bid))) do
+			insert(bid(ID,X,Bid)) + delete(received(X,bid(ID,Bid))).
+			
+		forall bel(received(X,completed(ID))) do
+			insert(completed(ID)) + delete(received(X,completed(ID))).
 	}
 }
