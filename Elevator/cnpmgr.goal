@@ -3,3 +3,16 @@ main module{
 
 	}
 }
+
+event module {
+	program {
+		forall bel(received(Sender,fButtonOn(Level,Dir)), not(fButtonOn(Level,Dir))) do
+			insert(fButtonOn(Level,Dir)).
+			
+		forall bel(received(Sender,fButtonOn(Level,Dir))) do
+			delete(received(Sender,fButtonOn(Level,Dir))).	
+		
+		forall bel(fButtonOn(Level,Dir),not(processed(Level,Dir))) do
+			adopt(processed(Level,Dir)).
+	}
+}
