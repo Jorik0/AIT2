@@ -1,9 +1,7 @@
 init module {
 	knowledge{
-		% onRoute succeeds when Level is in the current direction Dir relative to the floor the agent is at.
-		% Note that onRoute only succeeds when the elevator car is "docked", i.e. atFloor(Here) succeeds for
-		% some floor (see also the belief section).
-		onRoute(Level, Dir) :- atFloor(Here), dir(Dir), Diff is Level-Here, (Diff<0 -> Dir=down; Dir=up).
+		% onRoute succeeds when Level is in the current direction Dir relative to the position the agent is at.
+		onRoute(Level, Dir) :- carPosition(Here), dir(Dir), Diff is Level-Here, (Diff<0 -> Dir=down; Dir=up).
 		
 		%first check if there even is a task with ID id (to prevent prolog errors), then check if we bid on it
 		answered(ID) :- task(_,_,ID), sent(_,bid(ID,_)).
@@ -34,12 +32,38 @@ init module {
 }
 	
 main module {
-	program {
-		if bel(assigned(ID), task(Floor,Dir,ID), atFloor(Floor), dir(Dir), not(sent(manager,completed(ID)))) then
-			(manager).send(completed(ID)).
+	program {		
+		#define constants(A,B,C,D,E,Eps) 
+			bel(A is 1,B is 1,C is 5,D is 1,E is 10, Eps is 0.0001).
+			
+		#define numJobs(NumJobs)
+			bel(aggregate_all(count,assigned(ID),not(completed(ID)),NumJobs)).
+			
+		#define onRouteMacro(OnRoute,Destination,DestinationDir)
+			bel(onRoute(Destination,DestinationDir) -> OnRoute is 1 ; OnRoute is 0).
 		
-		if a-goal(answered(ID)), bel(Bid is random(100)) then
-			(manager).send(bid(ID,Bid)).		
+		%Check if a task has been completed by me
+		if bel(assigned(ID), task(Floor,Dir,ID), atFloor(Floor), dir(Dir), not(completed(ID))) then
+			(manager).send(completed(ID)) + insert(completed(ID)).
+			
+		%Check if a task has been completed by another agent (and I wasn't going there anyway)
+		forall bel(assigned(ID), task(Floor,Dir,ID), not(completed(ID)), not(fButtonOn(Floor,Dir)), not(eButtonOn(Floor))) do
+			(manager).send(completed(ID)) + insert(completed(ID)) + drop(atFloor(Floor),dir(Dir)).
+		
+		%Send bid
+		if a-goal(answered(ID)), bel(task(Destination,DestinationDir,ID)),
+			constants(A,B,C,D,E,Eps),
+			numJobs(NumJobs),		
+			bel(((numJobs = 0) -> Jobless = 1 ; Jobless = 0)),
+			onRouteMacro(OnRoute,Destination,DestinationDir),
+			bel(capacity(Capacity), people(People), carPosition(Pos)),
+			bel(Bid is 
+			A*(Capacity/(Capacity-People+Eps)) 
+			- B*abs(Destination-Pos)
+			+ C*Jobless
+			- D*NumJobs
+			+ E*OnRoute)  then
+				(manager).send(bid(ID,Bid)).		
 		
 		
 		% Goto the nearest floor that the agent wants to go to.
@@ -100,9 +124,11 @@ event module {
 		forall bel(received(manager,imp(completed(ID))), task(Level,Dir,ID)) do 
 			adopt(atFloor(Level),dir(Dir)) + insert(assigned(ID)) + delete(received(manager,imp(completed(ID)))).
 		
-		%Process eButtonOn(Level) !!!TODO:gebruiken om te checken waarom je naar een bepaalde vloer wil
-		forall bel(percept(eButtonOn(Level)),dir(Dir)) do
-			adopt(atFloor(Level),dir(Dir)).
+		%Process eButtonOn(Level)
+		forall bel(percept(eButtonOn(Level)), not(eButtonOn(Level)), dir(Dir)) do
+			insert(eButtonOn(Level)) + adopt(atFloor(Level),dir(Dir)).
 			
+		forall bel(eButtonOn(Level), not(percept(eButtonOn(Level)))) do
+			delete(eButtonOn(Level)).			
 	}
 }

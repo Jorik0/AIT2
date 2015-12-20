@@ -7,3 +7,14 @@ Code Stepping is gebugged
 auto delete messages
 
 voeg build in delete + insert toe
+
+maak debug mode minder sloom
+
+als je een runtime exception krijgt, dan geeft Goal momenteel niet weer waar in de agent dat gebeurde
+
+zit er een soort leak in goal (elke keer als ik een goal programma opstart en (correct) afsluit wordt de boel weer wat slomer en begint mijn ventilator intensiever te draaien)
+
+manier toevoegen om aantal goals van bepaalde soort te kunnen bepalen (voor numJobs)
+- Nog beter: maak het mogelijk om prolog code buiten bel() en goal() te kunnen gebruiken (bijvoorbeeld aggregate_all)
+
+kan geen macros in macros gebruiken (geeft nullpointerexception)

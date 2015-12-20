@@ -36,7 +36,7 @@ The reason the elevator that brings the person from the 9th to the 1st floor ind
 
 \[bid = -a\frac{capacity}{capacity-people+\epsilon} - b|destination - carPosition|\]\\ \[+ c*jobLess - d*numJobs + e*onRoute\]
 
-Where $capacity$ is the capacity of the car, $people$ is the number of passengers currently in the car, $destination$ is the jobs destination floor, $carPosition$ is the current position of the car, $jobLess$ is $1$ when the car has no current goals and $0$ otherwise, $numJobs$ is the number of current goals and $onRoute$ is $1$ when the destination level is in the same direction as where the car is currently traveling to and $0$ otherwise.
+Where $capacity$ is the capacity of the car, $people$ is the number of passengers currently in the car, $destination$ is the jobs destination floor, $carPosition$ is the current position of the car, $numJobs$ is the number of tasks the car has been assigned by the manager and has not yet completed, $jobLess$ is $1$ when $numJobs = 0$  and $0$ otherwise and $onRoute$ is $1$ when the destination level is in the same direction as where the car is currently traveling to (and the destination direction is also the same) and $0$ otherwise.
 
 Furthermore: \[\begin{array}{lcl}
 a & = & 1\\
