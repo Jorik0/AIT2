@@ -25,14 +25,37 @@
 \begin{document}
 \maketitle	
 
-\section{Assignment A}
-All elevators move to floor 9 first, as that is the first floor a person presses the floor button on. Pressing the button generates a fButtonOn percept, which in turn leads (after adding the info to the believe state) to the agents adding a goal to go this floor (with the correct direction). The agents then decide to fulfill this goal by going to floor 9, as they don't have any other goals yet. The agents don't tell each other where they going, so they all go to the same floor instead of adapting their plans to each other.
+\section{Introduction}
+The Goal Multi-Agent Elevator Manager assignment has as main objective to improve the performance of an elevator manager by means of implementing a multi-agent system (MAS). This MAS implements a manager agent which assigns tasks to the individual elevators based on a bidding system. The elevator with the best bid will get the task assigned to him. Assigning of the tasks should be intelligent by taking into account a number of factors which determine the value of the bid calculated. 
+\newline\newline
+The assignment is based on the MAS that is distributed with Goal (elevator.mas2g). The GOAL Eclipse version used is 1.3.3.201511161655  
+\newline\newline
+This report describes the motivation and results of implementing such an intelligent manager agent. First assignment part A answers the questions posed in relation to the initial MAS. In assignment part B the implementation, considerations and performance of the improved MAS are described. Finally, in assignment part C feedback is given on using GOAL. 
 
+\section{Assignment part A}
+
+\subsection{Question 1}
+\textit{Explain why all elevators move to floor 9, and explain why they do not stop to pick up other people along the way.}
+\newline\newline
+All elevators move to floor 9 first, as that is the first floor a person presses the floor button on. Pressing the button generates a fButtonOn percept, which in turn leads (after adding the info to the believe state) to the agents adding a goal to go this floor (with the correct direction). The agents then decide to fulfill this goal by going to floor 9, as they don't have any other goals yet. The agents don't tell each other where they going, so they all go to the same floor instead of adapting their plans to each other.
+\newline\newline
 The reason the elevators do not stop to pick up other people along the way is that the agents only change their goals when they are docked (in this case when they reach floor 9), as atFloor (used in onRoute, which in turn is used when changing goals because of fButtonOn) is only true when directly at a floor.
 
+\subsection{Question 2}
+
+\textit{Explain why the elevator that brings the person from the 9th to the 1st floor indicates that it will go down when it reaches the ground floor (which is not possible anyway), i.e. explain why the agent performs the action goto(1,down).}
+\newline\newline
 The reason the elevator that brings the person from the 9th to the 1st floor indicates that it will go down when it reaches the ground floor is that it performed the action goto(1,down), as the elevator was going to go in the down direction when it was at the floor where the person got on and for that reason added the atFloor(1),dir(down) goal (forall bel(percept(eButtonOn(Level)), dir(Dir)) do adopt(atFloor(Level), dir(Dir)).). In other words, as the direction was down it will still indicate to go down even though this doesn't exists for this level.
 
-\section{Assignment B}
+\section{Assignment part B}
+
+\subsection{MAS design}
+In our MAS design we created a manager agent. All fButton(Level,Dir) percept events in the elevator agent are send to this manager agent. The manager agent processes these events and sends a request for a bid to the elevator agents. All elevator agents calcute their bid and send this back to the manger. For all bids received the manager determines the best bid, which is simply the bid with the heighest value. The elevator agent with the highest bid gets the task to perform, the manager agent sends the task to this elevator agent. 
+
+All elevator agents need to calculate their bid taking into account a number of variables. A very important one is the capacity of 
+
+
+\subsection{Main decision rules}
 
 \[bid = -a\frac{capacity}{capacity-people+\epsilon} - b|destination - carPosition|\]\\ \[+ c*jobLess - d*numJobs + e*onRoute\]
 
@@ -46,5 +69,15 @@ d & = & 1\\
 e & = & 10\\
 \epsilon & = & 0.0001
 \end{array}\]
+
+\subsection{Performance}
+
+\subsection{Conclusions}
+argued conclusions about the usefulness of logic
+
+\section{Assignment part C}
+
+comments
+
 \end{document}
 
