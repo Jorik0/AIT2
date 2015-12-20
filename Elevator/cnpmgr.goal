@@ -37,13 +37,14 @@ main module{
 
 event module {
 	program {
+		%Process incoming (fButtonOn/Off)) messages
 		forall bel(received(_,fButtonOn(Level,Dir)), not(fButtonOn(Level,Dir))) do
 			insert(fButtonOn(Level,Dir)).
 			
 		forall bel(received(_,fButtonOff(Level,Dir)), fButtonOn(Level,Dir)) do
 			delete(fButtonOn(Level,Dir)).
 		
-		%Process incoming task messages (fButtonOn)
+		%Add a task if necessary (one at a time, we only process one at a time anyway)
 		if bel(fButtonOn(Level,Dir), not((task(Level,Dir,TID), not(completed(TID)))), currentID(ID), NID is ID + 1) then
 			insert(task(Level,Dir,ID)) + adopt(processed(ID)) + delete(currentID(ID)) + insert(currentID(NID)) + insert(fButtonOn(Level,Dir)).
 			

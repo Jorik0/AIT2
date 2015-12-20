@@ -100,7 +100,7 @@ event module {
 		forall bel(received(manager,imp(completed(ID))), task(Level,Dir,ID)) do 
 			adopt(atFloor(Level),dir(Dir)) + insert(assigned(ID)) + delete(received(manager,imp(completed(ID)))).
 		
-		%Process eButtonOn(Level)
+		%Process eButtonOn(Level) !!!TODO:gebruiken om te checken waarom je naar een bepaalde vloer wil
 		forall bel(percept(eButtonOn(Level)),dir(Dir)) do
 			adopt(atFloor(Level),dir(Dir)).
 			
