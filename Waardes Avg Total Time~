@@ -5,11 +5,39 @@ Avg Total Time:113527.55
 
 seed:314
 Avg Total Time:116497.5
-
-
+------------------------------------
 Versie met verwijderen taak als iemand anders hem al heeft gedaan:
 
 seed:6353
 Avg Total Time:103479.35
 
 Seed:314
+Avg Total Time:111696.8
+--------------------------------------
+Versie met OnWay !!!Slechtere versie!!!
+Hier voegde ik een bonus aan het bid toe als een passengier al naar het destination level toe wou
+
+seed:6353
+Avg Total Time:105199.15
+
+seed:314
+Avg Total Time:127255.95
+--------------------------------------
+Versie met aanpassen waar we heen gaan on the go
+
+seed:6353
+Avg Total Time:102400.0
+
+seed:314
+Avg Total Time:99659.55
+
+--------------------------------------
+Versie met nadenken over richtingen
+(we gaan het liefst naar levels/floors met dezelfde dir en met 
+
+seed:6353
+Avg Total Time:88380.5
+
+seed:314
+Avg Total Time:88150.05
+

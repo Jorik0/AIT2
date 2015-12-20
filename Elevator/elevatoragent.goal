@@ -1,15 +1,15 @@
 init module {
 	knowledge{
+		%Dir is the direction of To relative to From		
+		direction(From, To, Dir) :- Diff is To-From, (Diff < 0 -> Dir=down ; Dir=up).
+		
 		% onRoute succeeds when Level is in the current direction Dir relative to the position the agent is at.
-		onRoute(Level, Dir) :- carPosition(Here), dir(Dir), Diff is Level-Here, (Diff<0 -> Dir=down; Dir=up).
+		onRoute(Level, Dir) :- carPosition(Here), dir(Dir), direction(Here, Level, Dir).
 		
 		%first check if there even is a task with ID id (to prevent prolog errors), then check if we bid on it
 		answered(ID) :- task(_,_,ID), sent(_,bid(ID,_)).
 	}
 	beliefs{
-		% The direction that will be shown to the people at the next stop.
-		% This remains the intended direction of movement until there are no more
-		% planned stops in that direction.
 		dir(down).
 		% Initially, it is unknown whether doors are open or closed.
 		doorState(unknown).
@@ -25,7 +25,7 @@ init module {
 		% atFloor(Here) holds for some Here.
 		% When the elevator arrives at the requested floor, the Dir light will turn on.
 		goto(Level, Dir) {
-		   pre{ atFloor(Here), dir(DirNow), doorState(closed) }
+		   pre{ dir(DirNow), doorState(closed) }
 		   post{ not(dir(DirNow)), dir(Dir)}
 		}
 	}
@@ -33,15 +33,22 @@ init module {
 	
 main module {
 	program {		
-		#define constants(A,B,C,D,E,Eps) 
-			bel(A is 1,B is 1,C is 5,D is 1,E is 10, Eps is 0.0001).
+		#define constants(A,B,C,D,E,F,Eps) 
+			bel(A is 1,B is 1,C is 5,D is 1,E is 10,F is 50, Eps is 0.0001).
 			
 		#define numJobs(NumJobs)
 			bel(aggregate_all(count,assigned(ID),not(completed(ID)),NumJobs)).
 			
 		#define onRouteMacro(OnRoute,Destination,DestinationDir)
 			bel(onRoute(Destination,DestinationDir) -> OnRoute is 1 ; OnRoute is 0).
-		
+			
+		%Used to test which floor to go to (has to be the closest and in the same direction if possible)
+		#define closest(Distance,Here,Dir,Direction)
+			bel(dir(CurrentDir)), 
+			not(a-goal(atFloor(OFloor), dir(CurrentDir), direction(Here, OFloor, CurrentDir), ODistance is abs(OFloor-Here),
+			(not((CurrentDir = Direction, CurrentDir = Dir)) ; ODistance < Distance))),
+			not(a-goal(not((CurrentDir = Direction, CurrentDir = Dir)), atFloor(OtherFloor), OtherDistance is abs(OtherFloor-Here), OtherDistance < Distance)).
+				
 		%Check if a task has been completed by me
 		if bel(assigned(ID), task(Floor,Dir,ID), atFloor(Floor), dir(Dir), not(completed(ID))) then
 			(manager).send(completed(ID)) + insert(completed(ID)).
@@ -52,7 +59,7 @@ main module {
 		
 		%Send bid
 		if a-goal(answered(ID)), bel(task(Destination,DestinationDir,ID)),
-			constants(A,B,C,D,E,Eps),
+			constants(A,B,C,D,E,F,Eps),
 			numJobs(NumJobs),		
 			bel(((numJobs = 0) -> Jobless = 1 ; Jobless = 0)),
 			onRouteMacro(OnRoute,Destination,DestinationDir),
@@ -68,10 +75,14 @@ main module {
 		
 		% Goto the nearest floor that the agent wants to go to.
  		if a-goal( atFloor(Level), dir(Dir) ),
- 			bel( atFloor(Here), Distance is abs(Level-Here) ),
- 		    not(a-goal( atFloor(OtherLevel),
- 				OtherDistance is abs(OtherLevel-Here), OtherDistance<Distance) )
- 		then goto(Level, Dir).
+ 			bel(goingTo(Current), carPosition(Here), Distance is abs(Level-Here), direction(Here,Level,Direction) , CurrentDistance is abs(Current-Here), Distance < CurrentDistance),
+ 		    closest(Distance,Here,Dir,Direction) then 
+ 		    	goto(Level, Dir) + delete(goingTo(Current)) + insert(goingTo(Level)).
+ 		
+ 		if a-goal( atFloor(Level), dir(Dir) ),
+ 			bel(not(goingTo(Current)), carPosition(Here), Distance is abs(Level-Here), direction(Here,Level,Direction)),
+ 		    closest(Distance,Here,Dir,Direction) then
+ 		    	goto(Level, Dir) + insert(goingTo(Level)).
 	}
 }
 	
@@ -83,6 +94,9 @@ event module {
 			
 		forall bel( atFloor(Level), not(percept(atFloor(Level))) ) do
 			delete( atFloor(Level) ).
+			
+		if bel(atFloor(Level), goingTo(Level)) then
+			delete(goingTo(Level)).
 			
 		%Process people(N) (the amount of people in the car)	
 		forall bel(percept(people(N)), people(Old)) do
@@ -125,7 +139,7 @@ event module {
 			adopt(atFloor(Level),dir(Dir)) + insert(assigned(ID)) + delete(received(manager,imp(completed(ID)))).
 		
 		%Process eButtonOn(Level)
-		forall bel(percept(eButtonOn(Level)), not(eButtonOn(Level)), dir(Dir)) do
+		forall bel(percept(eButtonOn(Level)), not(eButtonOn(Level)), carPosition(Here), direction(Here,Level,Dir)) do
 			insert(eButtonOn(Level)) + adopt(atFloor(Level),dir(Dir)).
 			
 		forall bel(eButtonOn(Level), not(percept(eButtonOn(Level)))) do
