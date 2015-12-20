@@ -33,8 +33,8 @@ init module {
 	
 main module {
 	program {		
-		#define constants(A,B,C,D,E,F,Eps) 
-			bel(A is 1,B is 1,C is 5,D is 1,E is 10,F is 50, Eps is 0.0001).
+		#define constants(A,B,C,D,E,Eps) 
+			bel(A is 1,B is 1,C is 5,D is 1,E is 10, Eps is 0.0001).
 			
 		#define numJobs(NumJobs)
 			bel(aggregate_all(count,assigned(ID),not(completed(ID)),NumJobs)).
@@ -59,7 +59,7 @@ main module {
 		
 		%Send bid
 		if a-goal(answered(ID)), bel(task(Destination,DestinationDir,ID)),
-			constants(A,B,C,D,E,F,Eps),
+			constants(A,B,C,D,E,Eps),
 			numJobs(NumJobs),		
 			bel(((numJobs = 0) -> Jobless = 1 ; Jobless = 0)),
 			onRouteMacro(OnRoute,Destination,DestinationDir),
@@ -73,7 +73,7 @@ main module {
 				(manager).send(bid(ID,Bid)).		
 		
 		
-		% Goto the nearest floor that the agent wants to go to.
+		% Goto the most preferable floor that the agent wants to go to.
  		if a-goal( atFloor(Level), dir(Dir) ),
  			bel(goingTo(Current), carPosition(Here), Distance is abs(Level-Here), direction(Here,Level,Direction) , CurrentDistance is abs(Current-Here), Distance < CurrentDistance),
  		    closest(Distance,Here,Dir,Direction) then 

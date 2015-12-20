@@ -33,11 +33,19 @@ Avg Total Time:99659.55
 
 --------------------------------------
 Versie met nadenken over richtingen
-(we gaan het liefst naar levels/floors met dezelfde dir en met 
+(we gaan het liefst naar levels/floors met dezelfde doel dir en in dezelfde richting als we reizen) 
 
 seed:6353
 Avg Total Time:88380.5
 
 seed:314
 Avg Total Time:88150.05
+
+--------------------------------------
+Versie met hogere waardes voor jobless en zo
+
+Avg Total Time:99229.5
+
+Avg Total Time 95793.05
+
 
