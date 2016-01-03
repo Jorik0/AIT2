@@ -28,19 +28,15 @@
 \maketitle	
 
 \section{Introduction}
-This is the report for the Goal Multi-Agent Elevator assignment. In this assignment we were asked to develop a multi-agent system in which a manager agent allocates task among elevators (each controlled by a single agent) using an auction mechanism.
-
+This is the report for the GOAL Multi-Agent Elevator assignment. In this assignment we were asked to develop a multi-agent system in which a manager agent allocates tasks among elevators (each controlled by a single agent) using an auction mechanism.
+\newline\newline
 The main goal of the MAS should be to "bring everyone as quickly as possible to his or her target floor". This is measured in the form of average total time (i.e. average waiting time + average travel time).
-
-We completed the assignment by extending the MAS included with Goal (elevator.mas2g) in the Goal Eclipse plugin version 1.3.3.201511161655.
-
-This report is sectioned in the same way as the assignment. That is, in part A we will answer some questions posed in relation to the original (unextended) multi-agent system. In part B we describe our extension's design, implementation and performance. Here we will also give our conclusions about the success of the agent and the use of logic in implementing this kind of system. Finally, in part C we give some possible improvements for Goal.
-
-The Goal Multi-Agent Elevator Manager assignment has as main objective to improve the performance of an elevator manager by means of implementing a multi-agent system (MAS). This MAS implements a manager agent which assigns tasks to the individual elevators based on a bidding system. The elevator with the best bid will get the task assigned to him. Assigning of the tasks should be intelligent by taking into account a number of factors which determine the value of the bid calculated. 
 \newline\newline
-The assignment is based on the MAS that is distributed with Goal (elevator.mas2g). The GOAL Eclipse version used is 1.3.3.201511161655  
+We completed the assignment by extending the MAS included with GOAL (elevator.mas2g) in the Goal Eclipse plugin version 1.3.3.201511161655.
 \newline\newline
-This report describes the motivation and results of implementing such an intelligent manager agent. First assignment part A answers the questions posed in relation to the initial MAS. In assignment part B the implementation, considerations and performance of the improved MAS are described. Finally, in assignment part C feedback is given on using GOAL. 
+This report is ordered in the same way as the assignment. That is, in part A we will answer some questions posed in relation to the original (unextended) multi-agent system. In part B we describe our extension's design, implementation and performance. Here we will also give our conclusions about the performance of the agent and the use of logic in implementing this kind of system. Finally, in assignment part C feedback is given on using GOAL.
+\newline\newline
+The GOAL Multi-Agent Elevator Manager assignment has as main objective to improve the performance of an elevator manager by means of implementing a multi-agent system (MAS). This MAS implements a manager agent which assigns tasks to the individual elevators based on a bidding system. The elevator with the best bid will get the task assigned to him. Assigning of the tasks should be intelligent by taking into account a number of factors which determine the value of the bid calculated. 
 
 \section{Assignment part A}
 
@@ -51,7 +47,6 @@ All elevators move to floor 9 first, as that is the first floor a person presses
 \newline\newline
 The reason the elevators do not stop to pick up other people along the way is that the agents only change their goals when they are docked (in this case when they reach floor 9), as atFloor (used in onRoute, which in turn is used when changing goals because of fButtonOn) is only true when directly at a floor.
 
-\pagebreak
 \subsection{Question 2}
 
 \textit{Explain why the elevator that brings the person from the 9th to the 1st floor indicates that it will go down when it reaches the ground floor (which is not possible anyway), i.e. explain why the agent performs the action goto(1,down).}
