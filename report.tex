@@ -56,14 +56,11 @@ The reason the elevator that brings the person from the 9th to the 1st floor ind
 \section{Assignment part B}
 
 \subsection{MAS design}
-In our MAS design we've created a manager agent. All fButton(Level,Dir) percept events in the elevator agent are send to this manager agent. The manager agent processes these events and sends a request for a bid to the elevator agents. All elevator agents calculate their bid and send this back to the manger. For all bids received the manager determines the best bid, which is simply the bid with the highest value. The elevator agent with the highest bid gets the task to perform, the manager agent sends the task to this elevator agent. 
+In our MAS design we've created a manager agent. All fButton(Level,Dir) percept events in the elevator agent are send to this manager agent. The manager agent processes these events, creates new tasks and sends requests for bids on jobs to the elevator agents. The elevator agents calculate their bid and send this back to the manager. For all bids received, the manager determines the best bid, which is simply the bid with the highest value. The agent which gave the best bid gets assigned the task. As the elevator agents are also programmed by us (and they don't actually have to `pay' anything), so the auction does not need to account for lying agents which is why we can just choose the highest bid. The manager only processes one task at a time, as the assignment of a previous task influences the bids on other tasks. So the manager can't ask for bids on multiple tasks at a time. 
 \newline\newline
 All elevator agents need to calculate their bid taking into account a number of variables. A very important one is the capacity of a car in relation to the number of people currently in a car, as it not possible to accept new tasks when the car is full (although it would be if people are dropped first before letting new ones in). To be efficient in terms of traveling distance and thus time, it is relevant to know the distance from the current position to the position of the floor belonging to the task to be performed. We also introduced a variable which determines the number of jobs an elevator currently has. This indicator is deemed the second most important variable because an even spreading of tasks will lead to an overall more efficient handling of requests. A car that has no jobs at all (jobLess) gets a 'bonus' mark i.e. will generate a higher bid value than other cars. The final variable used in calculating bids is onRoute meaning the car is traveling in the direction of the floor belonging to the task to be performed. 
 
-\pagebreak
-
-\subsection{Main decision rules}
-The above described MAS design can be captured into a single main decision rule for generating a bid value represented by the formula:
+The above described MAS design can be captured into a single main formula for generating a bid value:
 \newline
 \[bid = -a\frac{CY}{CY-people+\epsilon} - b|dest - carPos| + c*jobLess - d*numJobs + e*onRoute\]
 \newline\newline
@@ -97,6 +94,46 @@ e & = & 10\\
 \epsilon & = & 0.0001
 \end{array}\]
 
+\subsection{Implementation}
+\subsubsection{Elevator}
+The elevator agent has the following main decision rules:
+
+\subsubsection*{Sending a bid}
+\begin{verbatim}
+if a-goal(answered(ID)), bel(task(Destination,DestinationDir,ID)),
+constants(A,B,C,D,E,Eps),
+numJobs(NumJobs),		
+bel(((numJobs = 0) -> Jobless = 1 ; Jobless = 0)),
+onRouteMacro(OnRoute,Destination,DestinationDir),
+bel(capacity(Capacity), people(People), carPosition(Pos)),
+bel(Bid is 
+A*(Capacity/(Capacity-People+Eps)) 
+- B*abs(Destination-Pos)
++ C*Jobless
+- D*NumJobs
++ E*OnRoute)  then
+(manager).send(bid(ID,Bid)).
+\end{verbatim}
+
+In this rule we first check if we have a (not yet achieved) goal of answering a request for a bid. The rest is just used for calculating the bid itself (using some macros for example to get the constants) and sending it to the manager. This rule shows that calculating bids using logic based programming is a bit more difficult than it needs to be.
+
+\subsubsection*{Moving to a different floor}
+\begin{verbatim}
+if a-goal( atFloor(Level), dir(Dir) ),
+bel(goingTo(Current), carPosition(Here), 
+Distance is abs(Level-Here), direction(Here,Level,Direction) , 
+CurrentDistance is abs(Current-Here), Distance < CurrentDistance),
+closest(Distance,Here,Dir,Direction) then 
+goto(Level, Dir) + delete(goingTo(Current)) + insert(goingTo(Level)).
+
+if a-goal( atFloor(Level), dir(Dir) ),
+bel(not(goingTo(Current)), carPosition(Here), 
+Distance is abs(Level-Here), direction(Here,Level,Direction)),
+closest(Distance,Here,Dir,Direction) then
+goto(Level, Dir) + insert(goingTo(Level)).
+\end{verbatim}
+
+The first rule triggers when the elevator is already moving to 
 \subsection{Performance}
 In measuring the performance we have used the following parameter values:
 
