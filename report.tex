@@ -98,7 +98,7 @@ e & = & 10\\
 \subsubsection{Elevator}
 The elevator agent has the following main decision rules:
 
-\subsubsection*{Sending a bid}
+\paragraph*{Sending a bid}
 \begin{verbatim}
 if a-goal(answered(ID)), bel(task(Destination,DestinationDir,ID)),
 constants(A,B,C,D,E,Eps),
@@ -117,7 +117,7 @@ A*(Capacity/(Capacity-People+Eps))
 
 In this rule we first check if we have a (not yet achieved) goal of answering a request for a bid. The rest is just used for calculating the bid itself (using some macros for example to get the constants) and sending it to the manager. This rule shows that calculating bids using logic based programming is a bit more difficult than it needs to be.
 
-\subsubsection*{Moving to a different floor}
+\paragraph*{Moving to a different floor}
 \begin{verbatim}
 if a-goal( atFloor(Level), dir(Dir) ),
 bel(goingTo(Current), carPosition(Here), 
@@ -133,7 +133,25 @@ closest(Distance,Here,Dir,Direction) then
 goto(Level, Dir) + insert(goingTo(Level)).
 \end{verbatim}
 
-The first rule triggers when the elevator is already moving to 
+The first rule triggers when the elevator is already moving to a floor, in this case it only changes its destination if it's actually closer. Both rules use the following macro to find the floor which is actually the most preferable to go to:
+
+\begin{verbatim}
+#define closest(Distance,Here,Dir,Direction)
+bel(dir(CurrentDir)), 
+not(a-goal(atFloor(OFloor), dir(CurrentDir), 
+direction(Here, OFloor, CurrentDir), ODistance is abs(OFloor-Here),
+(not((CurrentDir = Direction, CurrentDir = Dir)) ; ODistance < Distance))),
+not(a-goal(not((CurrentDir = Direction, CurrentDir = Dir)), 
+atFloor(OtherFloor), OtherDistance is abs(OtherFloor-Here), OtherDistance < Distance)).
+\end{verbatim}
+
+The first part of this macro is used to check if a floor exists (the elevator wants to go to) which is in the current direction the elevator is traveling (and has the same goal dir). In this case the rule fails if Dir is not this direction, if Level is not in this direction (aka if Directions is not Dir) or if Distance if larger than the distance to this floor. The second part only triggers when Level is not in the current direction and tests if there does not exist a floor (the elevator wants to go to) which is closer than Distance (regardless of direction).
+
+These rules, just as the previous rule, show the disadvantage of logic based programming for some tasks. This macro is very complicated, and while it may be possible to improve it somewhat, implementing this kind of rule will always be more complicated in a logic based language than it is to implement a similar `rule' in other types of languages (such as java).
+
+\subsubsection{Manager}
+The manager has the following main decision rules.
+
 \subsection{Performance}
 In measuring the performance we have used the following parameter values:
 
