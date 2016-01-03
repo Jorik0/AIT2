@@ -20,7 +20,7 @@
 \setlength\parindent{0pt}
 
 \title{Artificial Intelligence Techniques Assignment 2}
-\author{Jorik Oostenbrink (4169263) and Bernt Foppes (9243144)}
+\author{Jorik Oostenbrink (4169263) and Bernt Foppes (9243144)\\ Group 22}
 \date{}
 
 
@@ -36,7 +36,7 @@ This report is ordered in the same way as the assignment. That is, in part A we 
 \newline\newline
 The GOAL Multi-Agent Elevator Manager assignment has as main objective to improve the performance of an elevator manager by means of implementing a multi-agent system (MAS). This MAS implements a manager agent which assigns tasks to the individual elevators based on a bidding system. The elevator with the best bid will get the task assigned to him. Assigning of the tasks should be intelligent by taking into account a number of factors which determine the value of the bid calculated. 
 \newline\newline
-We completed the assignment by extending the MAS included with GOAL (elevator.mas2g) in the Goal Eclipse plugin version 1.3.3.201511161655.
+We completed the assignment by extending the MAS included with GOAL (elevator.mas2g) in the GOAL Eclipse plugin version 1.3.3.201511161655.
 
 \section{Assignment part A}
 
@@ -55,22 +55,22 @@ The reason the elevator that brings the person from the 9th to the 1st floor ind
 
 \section{Assignment part B}
 \subsection{MAS design}
-In our MAS design we've created a manager agent. All fButton(Level,Dir) percept events in the elevator agent are send to this manager agent. The manager agent processes these events, creates new tasks and sends requests for bids on jobs to the elevator agents. The elevator agents calculate their bid and send this back to the manager. For all bids received, the manager determines the best bid, which is simply the bid with the highest value. The agent which gave the best bid gets assigned the task. As the elevator agents are also programmed by us (and they don't actually have to `pay' anything), the auction does not need to account for lying agents which is why we can just choose the highest bid. The manager only processes one task at a time, as the assignment of a previous task influences the bids on other tasks. So the manager can't ask for bids on multiple tasks at a time. 
+In our MAS design we've created a manager agent. All fButton(Level,Dir) percept events in the elevator agent are send to this manager agent. The manager agent processes these events, creates new tasks and sends requests for bids on jobs to the elevator agents. The elevator agents calculate their bid and send this back to the manager. For all bids received, the manager determines the best bid, which is simply the bid with the highest value. The agent which gave the highest bid will be assigned the task to. The manager only processes one task at a time, as the assignment of a previous task influences the bids on other tasks. So the manager can't ask for bids on multiple tasks at a time. 
 
-\subsubsection{Communication Protocol}
+\subsubsection{Communication protocol}
 The specific communication between the elevators and the manager works as follows:
 \begin{enumerate}
-	\item All elevators send a ``fButtonOn(Level, Dir)'' message to the manager when someone has just pressed the button on level Level for direction Dir and send a ``fButtonOff(Level, Dir)'' if the people have been picked up (when the elevators do not receive a fButtonOn(Level, Dir) percept anymore).
+	\item All elevators send a ``fButtonOn(Level, Dir)'' message to the manager when someone has just pressed the button on level Level for direction Dir. Once the people have been picked up a  ``fButtonOff(Level, Dir)'' is send (when the elevators do not receive a fButtonOn(Level, Dir) percept anymore).
 	\item The manager sends bid requests in the form of ``?bid(Level,Dir,ID)'', where ID is the unique ID for the task to goto(Level,Dir).
-	\item In response elevator agents send back a ``bid(ID,Bid)'' message containing the ID of the task and the bid on this task.
-	\item The manager sends a ``!completed(ID)'' message to the elevator agent who actually gets assigned the task.
-	\item This agent is expected to send back a ``completed(ID)'' message when the task has been completed (be it by himself or another elevator), this way the manager knows he has to create a new task if the button is still on or is pushed on again. 
+	\item In response, elevator agents send back a ``bid(ID,Bid)'' message containing the ID of the task and the bid on this task.
+	\item The manager sends a ``!completed(ID)'' message to the elevator agent which gets assigned the task.
+	\item This agent is expected to send back a ``completed(ID)'' message when the task has been completed (be it by himself or another elevator). This way the manager knows he has to create a new task if the button is still on or is pushed on again. 
 \end{enumerate}
 
 \subsubsection{Bidding}
 All elevator agents need to calculate their bid taking into account a number of variables. A very important one is the capacity of a car in relation to the number of people currently in a car, as it not possible to accept new tasks when the car is full (although it would be if people are dropped first before letting new ones in). To be efficient in terms of traveling distance and thus time, it is relevant to know the distance from the current position to the position of the floor belonging to the task to be performed. We also introduced a variable which determines the number of jobs an elevator currently has. This indicator is deemed the second most important variable because an even spreading of tasks will lead to an overall more efficient handling of requests. A car that has no jobs at all (jobLess) gets a 'bonus' mark i.e. will generate a higher bid value than other cars. The final variable used in calculating bids is onRoute meaning the car is traveling in the direction of the floor belonging to the task to be performed. 
-
-The above described MAS design can be captured into a single main formula for generating a bid value:
+\newline\newline
+The above described MAS design can be captured into a single formula for generating a bid value:
 \newline
 \[bid = -a\frac{CY}{CY-people+\epsilon} - b|dest - carPos| + c*jobLess - d*numJobs + e*onRoute\]
 \newline\newline
@@ -125,7 +125,7 @@ A*(Capacity/(Capacity-People+Eps))
 (manager).send(bid(ID,Bid)).
 \end{verbatim}
 
-In this rule we first check if we have a (not yet achieved) goal of answering a request for a bid. The rest is just used for calculating the bid itself (using some macros for example to get the constants) and sending it to the manager. This rule shows that calculating bids using logic based programming is a bit more difficult than it needs to be.
+In this rule we first check if we have a (not yet achieved) goal of answering a request for a bid. The remaining part is used for calculating the bid itself (using some macros for example to get the constants) and sending it to the manager. This rule shows that calculating bids using logic based programming is a bit more difficult than it needs to be.
 
 \paragraph*{Moving to a different floor}
 \begin{verbatim}
@@ -155,9 +155,9 @@ not(a-goal(not((CurrentDir = Direction, CurrentDir = Dir)),
 atFloor(OtherFloor), OtherDistance is abs(OtherFloor-Here), OtherDistance < Distance)).
 \end{verbatim}
 
-The first part of this macro is used to check if a floor exists (the elevator wants to go to) which is in the current direction the elevator is traveling (and has the same goal dir). In this case the rule fails if Dir is not this direction, if Level is not in this direction (aka if Directions is not Dir) or if Distance if larger than the distance to this floor. The second part only triggers when Level is not in the current direction and tests if there does not exist a floor (the elevator wants to go to) which is closer than Distance (regardless of direction).
-
-These rules, just as the previous rule, show the disadvantage of logic based programming for some tasks. This macro is very complicated, and while it may be possible to improve it somewhat (by for example splitting this decision amongst multiple decisions), implementing this kind of rule will always be more complicated in a logic based language than it is to implement a similar `rule' in other types of languages (such as java).
+The first part of this macro is used to check if a floor exists (the elevator wants to go to) which is in the current direction the elevator is traveling (and has the same goal dir). In this case the rule fails if Dir is not this direction, if Level is not in this direction (i.e. if Directions is not Dir) or if Distance if larger than the distance to this floor. The second part only triggers when Level is not in the current direction and tests if there does not exist a floor (the elevator wants to go to) which is closer than Distance (regardless of direction).
+\newline\newline
+These rules, just as the previous rule, show the disadvantage of logic based programming for some tasks. This macro is very complicated, and while it may be possible to improve it somewhat (by for example splitting this decision amongst multiple decisions), implementing this kind of rule will always be more complicated in a logic based language than it is to implement a similar `rule' in other types of languages (such as Java).
 
 \subsubsection{Manager}
 The manager has the following main decision rules:
@@ -170,14 +170,14 @@ insert(task(Level,Dir,ID)) + adopt(processed(ID)) + delete(currentID(ID)) +
 insert(currentID(NID)).
 \end{verbatim}
 
-The creation of tasks is done in the event module. If a button has been pressed somewhere and the manager hasn't created a new task for it yet, he creates a new task + task ID and adopts the goal to actually process this task. This has to be done with an if instead of a forall rule, as in the last case different tasks will be assigned the same ID.
+The creation of tasks is done in the event module. If a button has been pressed somewhere and the manager hasn't created a new task for it yet, he creates a new task + task ID and adopts the goal to actually process this task. This has to be done with an if instead of a for-all rule, as in the last case different tasks will be assigned the same ID.
 
 \paragraph*{Start processing a task}
 \begin{verbatim}
 if bel(not(processing(X))), a-goal(processed(ID)) then
 insert(processing(ID)).
 \end{verbatim}
-This rule is simply used to start processing a new task if the manager is not currently processing a task (and one is available)
+This rule is simply used to start processing a new task if the manager is not currently processing a task (and one is available).
 
 \paragraph*{Request bids}
 \begin{verbatim}
@@ -192,15 +192,15 @@ Requests bids from all elevators that have not yet been asked for a bid on this 
 if bel(processing(ID), bestBid(ID,X,Bid)) then
 (X).send(!completed(ID)) + delete(processing(ID)).
 \end{verbatim}
-Assigns the task to the agent with the highest bid, which is decided by:
+Assigns the task to the agent with the highest bid, which is determined by:
 
 \begin{verbatim}
 bestBid(ID,X,Bid) :- bid(ID,X,Bid), not((agent(X),not(me(x)),not(bid(ID,X,_)))), 
 not((bid(ID,_,OtherBid), OtherBid > Bid)).
 \end{verbatim}
 Which justs checks if all bids have been received and if Bid is the highest bid.
-
-The main decision rules in manager are all relatively simple. Implementing this kind of agent seems to be easier in Goal than in other (non logic based) languages. As everything can be easily put in simple (logic) rules like assign the task to the highest bidder. In contrast to the elevator agents which actually have to compute bids and decide on a more complicated issue (which floor to go to first). 
+\newline\newline
+The main decision rules in manager are all relatively simple. Implementing this kind of agent seems to be easier in GOAL than in other (non logic based) languages. As everything can be easily put in simple (logic) rules like assign the task to the highest bidder. In contrast to the elevator agents which actually have to compute bids and decide on a more complicated issue (which floor to go to first). 
 
 \subsection{Performance}
 In measuring the performance we have used the following parameter values:
@@ -216,11 +216,9 @@ InsertionTime & = & 50000\\
 TimeFactor & = & 3
 \end{array}\] 
 
-\pagebreak
-
-The performance indicator used is the average total time ($avgtt$). In order to be a bit more generic in testing the performance we also tested the performance with another random seed being 314. We did not test the performance with other values for number of floors, cars etcetera although this would lead to a more reliable measure, as it's always possible to add more test environments, but we need to stop somewhere. We believe that these 2 tests, combined with our reasoning with why something might be an improvement is actually enough to accurately measure if one system performs better than another system. Although we won't be able to accurately give estimates for the performance in general.
+The performance indicator used is the average total time ($avgtt$). In order to be a bit more generic in testing the performance we also tested the performance with another random seed being 314. We did not test the performance with other values for number of floors, cars etcetera although this would lead to a more reliable measure, as it's always possible to add more test environments, but we need to stop somewhere. We believe that these 2 tests, combined with our reasoning with why something might be an improvement is actually enough to accurately measure if one implementation performs better than another.
 \newline\newline
-The initial performance of the unadapted MAS distributed with Goal was:
+The initial performance of the unadapted MAS distributed with GOAL was:
 
 \[\begin{array}{lcl}
 avgtt (seed: 6353) & = & 132446.2\\
@@ -263,9 +261,9 @@ The process of improving the overall performance consisted for the largest part 
 \subsection{Conclusions}
 We can conclude that the auction mechanism combined with the other improvements did significantly improve the multi-agent system. This kind of mechanism seems to be very suitable for these kind of systems.
 
-However, we feel that for an assignment as the one described in this report, using logic is not very useful. While it does help in implementing goal oriented agents and it did make the manager very easy to implement, these benefits do not weigh up against the difficulty of implementing bidding and more complex choices with logic. Logic based programming is very useful when you have a lot of simple rules or simple combinations of simple rules, but not when you are computing utilities or following more complex rules like ``go to the nearest goal (floor) in the same direction as you're already traveling and with the same goal direction (aka right elevator button) as you're already traveling, if this goal does not exist go to the nearest goal (floor)''.
+However, we feel that for an assignment as the one described in this report, using logic is not very useful. While it does help in implementing goal oriented agents and it did make the manager very easy to implement, these benefits do not weigh up against the difficulty of implementing bidding and more complex choices with logic. Logic based programming is very useful when you have a lot of simple rules or simple combinations of simple rules, but not when you are computing utilities or following more complex rules like ``go to the nearest goal (floor) in the same direction as you're already traveling and with the same goal direction (i.e. right elevator button) as you're already traveling, if this goal does not exist go to the nearest goal (floor)''.
 
-We also felt we sometimes had to come up with workarounds as the deemed straightforward manner of coding could not be utilized. One example is using an if-statement within another if-statement (or macros in macros, which just crashes Goal), which is not possible in Goal at the moment. 
+We also felt we sometimes had to come up with workarounds as the deemed straightforward manner of coding could not be utilized. One example is using an if-statement within another if-statement (or macros in macros, which just crashes GOAL), which is not possible in GOAL at the moment. 
 
 \section{Assignment part C}
 In terms of feedback on using the GOAL system we have more than two feedback comments but we will limit ourselves to the two most important ones. 
