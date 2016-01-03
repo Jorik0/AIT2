@@ -168,30 +168,43 @@ TimeFactor & = & 3
 
 \pagebreak
 
-The performance indicator used is the average total time ($avgtt$). The initial performance of the unadapted (besides the RandomSeed change to 6353) MAS distributed with Goal was:
+The performance indicator used is the average total time ($avgtt$). In order to be a bit more generic in testing the performance we also tested the performance with another random seed being 314. We did not test the performance with other values for number of floors, cars etcetera although this would lead to a more reliable meausure (but not required explicitely in the assignment).
+\newline\newline
+The initial performance of the unadapted (besides the RandomSeed change to 6353) MAS distributed with Goal was:
 
 \[\begin{array}{lcl}
-avgtt & = & 132446.2
+avgtt (seed: 6353) & = & 132446.2
 \end{array}\]
 
-Our first improvement has been to remove a task when another car has already completed this. The manager agent keeps track of tasks, the car with highest bid gets the task assigned and when completed the manager removes this task from the tasklist which resulted in a performance of:
+The very first change was to implement a manager agent. By implementing this the cars are no longer individual agents which make their own decisions but the manager agent desides which tasks they have to perform. The performance after this change was:
 \[\begin{array}{lcl}
-avgtt & = & 103479.35
+avgtt (seed: 6353) & = & 113527.55\\
+avgtt (seed: 614) & = & 116497.5
+\end{array}\]
+
+
+Our first actual improvement has been to remove a task when another car has already completed this. The manager agent keeps track of tasks, the car with highest bid gets the task assigned and when completed the manager removes this task from the tasklist which resulted in a performance of:
+\[\begin{array}{lcl}
+avgtt (seed: 6353) & = & 103479.35\\
+avgtt (seed: 314) & = & 103479.35
 \end{array}\]
 
 We tried to improve the performance by adding a bonus to the bid value when a person currently in the car of an elevator already wants to go the destination level of the task for which a bid is requested. This resulted in a slightly worse performance:
 \[\begin{array}{lcl}
-avgtt & = & 105199.15
+avgtt (seed: 6353) & = & 105199.15\\
+avgtt (seed: 614) & = & 127255.95
 \end{array}\]
 
 Originally the direction of a car is only updated when a car is docked i.e. not moving. As cars receive bid requests all the time it makes sense to also update this while a car is moving. The idea is to let a car better anticipate on bid requests and therefore generate higher bid values if relevant. This resulted in a performance improvement: 
 \[\begin{array}{lcl}
-avgtt & = & 102400.0
+avgtt (seed: 6353) & = & 102400.0\\
+avgtt (seed: 614) & = & 99659.55
 \end{array}\]
 
 The final improvement we have made was by better utilize the direction of travel with respect to the destination floor belonging to a task for which the manager agent requests a bid. It is more efficient to get a task assigned when the destination floor of this task is one we already have to go to and/or is in the same direction as we are traveling. Implementing this resulted in a substantial performance improvement:
 \[\begin{array}{lcl}
-avgtt & = & 88380.5
+avgtt (seed: 6353) & = & 88380.5\\
+avgtt (seed: 614) & = & 88150.05
 \end{array}\]
 
 The process of improving the overall performance consisted for the largest part of improving the efficiency of the individual cars by using a manager agent for coordination of tasks and improving the bid value calculation by deducing the best strategy. A smaller part consisted of trial and error in calculating this bid value by changing the weighing factors. We have tried to further improve the performance by changing these weighing factors but this didn't lead to a better performance. The initial values which were determined as an educated guess proved to be the best values in the end. However, due to the fact there are numerous possible combinations of different weighing factors we don't exclude the possibility the performance can be improved even further but this would take a very considerable amount of time to test. 
