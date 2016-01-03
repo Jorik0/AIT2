@@ -53,7 +53,7 @@ main module {
 		if bel(assigned(ID), task(Floor,Dir,ID), atFloor(Floor), dir(Dir), not(completed(ID))) then
 			(manager).send(completed(ID)) + insert(completed(ID)).
 			
-		%Check if a task has been completed by another agent (and I wasn't going there anyway)
+		%Check if a task has been completed by another agent (and I wasn't going there to deliver passengers too)
 		forall bel(assigned(ID), task(Floor,Dir,ID), not(completed(ID)), not(fButtonOn(Floor,Dir)), not(eButtonOn(Floor))) do
 			(manager).send(completed(ID)) + insert(completed(ID)) + drop(atFloor(Floor),dir(Dir)).
 		

@@ -147,10 +147,50 @@ atFloor(OtherFloor), OtherDistance is abs(OtherFloor-Here), OtherDistance < Dist
 
 The first part of this macro is used to check if a floor exists (the elevator wants to go to) which is in the current direction the elevator is traveling (and has the same goal dir). In this case the rule fails if Dir is not this direction, if Level is not in this direction (aka if Directions is not Dir) or if Distance if larger than the distance to this floor. The second part only triggers when Level is not in the current direction and tests if there does not exist a floor (the elevator wants to go to) which is closer than Distance (regardless of direction).
 
-These rules, just as the previous rule, show the disadvantage of logic based programming for some tasks. This macro is very complicated, and while it may be possible to improve it somewhat, implementing this kind of rule will always be more complicated in a logic based language than it is to implement a similar `rule' in other types of languages (such as java).
+These rules, just as the previous rule, show the disadvantage of logic based programming for some tasks. This macro is very complicated, and while it may be possible to improve it somewhat (by for example splitting this decision amongst multiple decisions), implementing this kind of rule will always be more complicated in a logic based language than it is to implement a similar `rule' in other types of languages (such as java).
 
 \subsubsection{Manager}
-The manager has the following main decision rules.
+The manager has the following main decision rules:
+
+\paragraph*{Creating tasks}
+\begin{verbatim}
+if bel(fButtonOn(Level,Dir), not((task(Level,Dir,TID), not(completed(TID)))),
+ currentID(ID), NID is ID + 1) then
+insert(task(Level,Dir,ID)) + adopt(processed(ID)) + delete(currentID(ID)) + 
+insert(currentID(NID)).
+\end{verbatim}
+
+The creation of tasks is done in the event module. If a button has been pressed somewhere and the manager hasn't created a new task for it yet, he creates a new task + task ID and adopts the goal to actually process this task. This has to be done with an if instead of a forall rule, as in the last case different tasks will be assigned the same ID.
+
+\paragraph*{Start processing a task}
+\begin{verbatim}
+if bel(not(processing(X))), a-goal(processed(ID)) then
+insert(processing(ID)).
+\end{verbatim}
+This rule is simply used to start processing a new task if the manager is not currently processing a task (and one is available)
+
+\paragraph*{Request bids}
+\begin{verbatim}
+forall bel(processing(ID), agent(X), not(me(X)), 
+not(sent(X,int(bid(_,_,ID)))), task(Level,Dir,ID)) do
+(X).send(?bid(Level,Dir,ID)).
+\end{verbatim}
+Requests bids from all elevators that have not yet been asked for a bid on this task.
+
+\paragraph*{Assigning a task}
+\begin{verbatim}
+if bel(processing(ID), bestBid(ID,X,Bid)) then
+(X).send(!completed(ID)) + delete(processing(ID)).
+\end{verbatim}
+Assigns the task to the agent with the highest bid, which is decided by:
+
+\begin{verbatim}
+bestBid(ID,X,Bid) :- bid(ID,X,Bid), not((agent(X),not(me(x)),not(bid(ID,X,_)))), 
+not((bid(ID,_,OtherBid), OtherBid > Bid)).
+\end{verbatim}
+Which justs checks if all bids have been received and if Bid is the highest bid.
+
+The main decision rules in manager are all relatively simple. Implementing this kind of agent seems to be easier in Goal than in other (non logic based) languages. As everything can be easily put in simple (logic) rules like assign the task to the highest bidder. In contrast to the elevator agents which actually have to compute bids and decide on a more complicated issue (which floor to go to first). 
 
 \subsection{Performance}
 In measuring the performance we have used the following parameter values:
@@ -168,58 +208,63 @@ TimeFactor & = & 3
 
 \pagebreak
 
-The performance indicator used is the average total time ($avgtt$). In order to be a bit more generic in testing the performance we also tested the performance with another random seed being 314. We did not test the performance with other values for number of floors, cars etcetera although this would lead to a more reliable meausure (but not required explicitely in the assignment).
+The performance indicator used is the average total time ($avgtt$). In order to be a bit more generic in testing the performance we also tested the performance with another random seed being 314. We did not test the performance with other values for number of floors, cars etcetera although this would lead to a more reliable measure, as it's always possible to add more test environments, but we need to stop somewhere. We believe that these 2 tests, combined with our reasoning with why something might be an improvement is actually enough to accurately measure if one system performs better than another system. Although we won't be able to accurately give estimates for the performance in general.
 \newline\newline
-The initial performance of the unadapted (besides the RandomSeed change to 6353) MAS distributed with Goal was:
+The initial performance of the unadapted MAS distributed with Goal was:
 
 \[\begin{array}{lcl}
-avgtt (seed: 6353) & = & 132446.2
+avgtt (seed: 6353) & = & 132446.2\\
+avgtt (seed: 314) & = & 103715.9
 \end{array}\]
 
-The very first change was to implement a manager agent. By implementing this the cars are no longer individual agents which make their own decisions but the manager agent desides which tasks they have to perform. The performance after this change was:
+The very first change was to implement a manager agent and the auction mechanism. The performance after this change was:
 \[\begin{array}{lcl}
 avgtt (seed: 6353) & = & 113527.55\\
-avgtt (seed: 614) & = & 116497.5
+avgtt (seed: 314) & = & 116497.5
 \end{array}\]
 
 
-Our first actual improvement has been to remove a task when another car has already completed this. The manager agent keeps track of tasks, the car with highest bid gets the task assigned and when completed the manager removes this task from the tasklist which resulted in a performance of:
+Our first actual improvement has been to make all elevators constantly check if another elevator has already completed an assigned task because it was dropping of other passengers anyway. In this case the elevator can drop this task (and signal the manager the task has been completed). The performance after this change was:
 \[\begin{array}{lcl}
 avgtt (seed: 6353) & = & 103479.35\\
 avgtt (seed: 314) & = & 103479.35
 \end{array}\]
 
-We tried to improve the performance by adding a bonus to the bid value when a person currently in the car of an elevator already wants to go the destination level of the task for which a bid is requested. This resulted in a slightly worse performance:
+We tried to improve the performance by adding a bonus to the bid value when a person currently in the car of an elevator already wants to go the destination level of the task for which a bid is requested. This resulted in a worse performance, so we reversed the change:
 \[\begin{array}{lcl}
 avgtt (seed: 6353) & = & 105199.15\\
 avgtt (seed: 614) & = & 127255.95
 \end{array}\]
 
-Originally the direction of a car is only updated when a car is docked i.e. not moving. As cars receive bid requests all the time it makes sense to also update this while a car is moving. The idea is to let a car better anticipate on bid requests and therefore generate higher bid values if relevant. This resulted in a performance improvement: 
+Originally the destination of a car is only updated when a car is docked i.e. not moving. As cars can receive new tasks at any time it makes sense to also update the destination while a car is moving. This resulted in a performance improvement: 
 \[\begin{array}{lcl}
 avgtt (seed: 6353) & = & 102400.0\\
 avgtt (seed: 614) & = & 99659.55
 \end{array}\]
 
-The final improvement we have made was by better utilize the direction of travel with respect to the destination floor belonging to a task for which the manager agent requests a bid. It is more efficient to get a task assigned when the destination floor of this task is one we already have to go to and/or is in the same direction as we are traveling. Implementing this resulted in a substantial performance improvement:
+The final improvement we have made was by better utilizing the direction of travel when choosing where to go. It makes more sense to keep going in the same direction as the elevator is already moving. Implementing this resulted in a substantial performance improvement:
 \[\begin{array}{lcl}
 avgtt (seed: 6353) & = & 88380.5\\
 avgtt (seed: 614) & = & 88150.05
 \end{array}\]
 
-The process of improving the overall performance consisted for the largest part of improving the efficiency of the individual cars by using a manager agent for coordination of tasks and improving the bid value calculation by deducing the best strategy. A smaller part consisted of trial and error in calculating this bid value by changing the weighing factors. We have tried to further improve the performance by changing these weighing factors but this didn't lead to a better performance. The initial values which were determined as an educated guess proved to be the best values in the end. However, due to the fact there are numerous possible combinations of different weighing factors we don't exclude the possibility the performance can be improved even further but this would take a very considerable amount of time to test. 
+The process of improving the overall performance consisted for the largest part of improving the efficiency of the MAS by using a manager agent for coordination of tasks and by improving the efficiency of individual cars by changing their behavior. A smaller part consisted of trial and error in calculating the bid value by changing the weighing factors. We have tried to further improve the performance by changing these weighing factors but this didn't lead to a better performance. The initial values which were determined as an educated guess proved to be the best values in the end. However, due to the fact there are numerous possible combinations of different weighing factors we don't exclude the possibility the performance can be improved even further but this would take a very considerable amount of time to test. 
 
 \subsection{Conclusions}
-Overall we feel that for an assignment as the one described in this report, using logic is very useful. Abstractions from the assignment goals and formulating them into logic is believed to greatly reduce the amount of code required to implement a solution. On the other hand we felt we sometimes had to come up with workarounds as the deemed straightforward manner of coding could not be utilized. One example is using an if-statement within another if-statement. Another is implementing the bid calculation formula, we had to use beliefs while we required a simple calculation. 
+We can conclude that the auction mechanism combined with the other improvements did significantly improve the multi-agent system. This kind of mechanism seems to be very suitable for these kind of systems.
+
+However, we feel that for an assignment as the one described in this report, using logic is not very useful. While it does help in implementing goal oriented agents and it did make the manager very easy to implement, these benefits do not weigh up against the difficulty of implementing bidding and more complex choices with logic. Logic based programming is very useful when you have a lot of simple rules or simple combinations of simple rules, but not when you are computing utilities or following more complex rules like ``go to the nearest goal (floor) in the same direction as you're already traveling and with the same goal direction (aka right elevator button) as you're already traveling, if this goal does not exist go to the nearest goal (floor)''.
+
+We also felt we sometimes had to come up with workarounds as the deemed straightforward manner of coding could not be utilized. One example is using an if-statement within another if-statement (or macros in macros, which just crashes Goal), which is not possible in Goal at the moment. 
 
 \section{Assignment part C}
 In terms of feedback on using the GOAL system we have more than two feedback comments but we will limit ourselves to the two most important ones. 
 
 \subsection{Logging}
-We noticed that the items that appear in the logging window are not ordered by the time on which they occurred. For example the log message that a goal is achieved appears before the log message of the action that resulted in the goal to be achieved. This can make it hard to understand/debug using logging. Also when an exception occurs it is sometime not clear from the logging what the root cause is of this exception.
+We noticed that the items that appear in the logging window are not ordered by the time on which they occurred. For example the log message that a goal is achieved appears before the log message of the action that resulted in the goal to be achieved. This can make it hard to understand/debug using logging. Also when an exception occurs it is sometimes not clear from the logging what the root cause of this exception is.
 
 \subsection{Debugging}
-We very much wanted to use debugging using breakpoints but could not get this to work properly. The main reason is that we could change the code stepping options as this just shows a grey box instead of options to change (in Preferences \textrightarrow GOAL \textrightarrow Runtime \textrightarrow Code stepping). We encountered this issue on different operating systems. 
+We very much wanted to use debugging using breakpoints but could not get this to work properly. The main reason is that we could not change the code stepping options as this just shows a grey box instead of options to change (in Preferences \textrightarrow GOAL \textrightarrow Runtime \textrightarrow Code stepping). We encountered this issue on multiple operating systems. 
 
 \end{document}
 

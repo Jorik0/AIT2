@@ -46,7 +46,7 @@ event module {
 		
 		%Add a task if necessary (one at a time, we only process one at a time anyway)
 		if bel(fButtonOn(Level,Dir), not((task(Level,Dir,TID), not(completed(TID)))), currentID(ID), NID is ID + 1) then
-			insert(task(Level,Dir,ID)) + adopt(processed(ID)) + delete(currentID(ID)) + insert(currentID(NID)) + insert(fButtonOn(Level,Dir)).
+			insert(task(Level,Dir,ID)) + adopt(processed(ID)) + delete(currentID(ID)) + insert(currentID(NID)).
 			
 		%remove the received messages
 		forall bel(received(Sender,fButtonOn(Level,Dir))) do
