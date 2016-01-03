@@ -54,10 +54,20 @@ The reason the elevators do not stop to pick up other people along the way is th
 The reason the elevator that brings the person from the 9th to the 1st floor indicates that it will go down when it reaches the ground floor is that it performed the action goto(1,down), as the elevator was going to go in the down direction when it was at the floor where the person got on and for that reason added the atFloor(1),dir(down) goal (forall bel(percept(eButtonOn(Level)), dir(Dir)) do adopt(atFloor(Level), dir(Dir)).). In other words, as the direction was down it will still indicate to go down even though this doesn't exists for this level.
 
 \section{Assignment part B}
-
 \subsection{MAS design}
-In our MAS design we've created a manager agent. All fButton(Level,Dir) percept events in the elevator agent are send to this manager agent. The manager agent processes these events, creates new tasks and sends requests for bids on jobs to the elevator agents. The elevator agents calculate their bid and send this back to the manager. For all bids received, the manager determines the best bid, which is simply the bid with the highest value. The agent which gave the best bid gets assigned the task. As the elevator agents are also programmed by us (and they don't actually have to `pay' anything), so the auction does not need to account for lying agents which is why we can just choose the highest bid. The manager only processes one task at a time, as the assignment of a previous task influences the bids on other tasks. So the manager can't ask for bids on multiple tasks at a time. 
-\newline\newline
+In our MAS design we've created a manager agent. All fButton(Level,Dir) percept events in the elevator agent are send to this manager agent. The manager agent processes these events, creates new tasks and sends requests for bids on jobs to the elevator agents. The elevator agents calculate their bid and send this back to the manager. For all bids received, the manager determines the best bid, which is simply the bid with the highest value. The agent which gave the best bid gets assigned the task. As the elevator agents are also programmed by us (and they don't actually have to `pay' anything), the auction does not need to account for lying agents which is why we can just choose the highest bid. The manager only processes one task at a time, as the assignment of a previous task influences the bids on other tasks. So the manager can't ask for bids on multiple tasks at a time. 
+
+\subsubsection{Communication Protocol}
+The specific communication between the elevators and the manager works as follows:
+\begin{enumerate}
+	\item All elevators send a ``fButtonOn(Level, Dir)'' message to the manager when someone has just pressed the button on level Level for direction Dir and send a ``fButtonOff(Level, Dir)'' if the people have been picked up (when the elevators do not receive a fButtonOn(Level, Dir) percept anymore).
+	\item The manager sends bid requests in the form of ``?bid(Level,Dir,ID)'', where ID is the unique ID for the task to goto(Level,Dir).
+	\item In response elevator agents send back a ``bid(ID,Bid)'' message containing the ID of the task and the bid on this task.
+	\item The manager sends a ``!completed(ID)'' message to the elevator agent who actually gets assigned the task.
+	\item This agent is expected to send back a ``completed(ID)'' message when the task has been completed (be it by himself or another elevator), this way the manager knows he has to create a new task if the button is still on or is pushed on again. 
+\end{enumerate}
+
+\subsubsection{Bidding}
 All elevator agents need to calculate their bid taking into account a number of variables. A very important one is the capacity of a car in relation to the number of people currently in a car, as it not possible to accept new tasks when the car is full (although it would be if people are dropped first before letting new ones in). To be efficient in terms of traveling distance and thus time, it is relevant to know the distance from the current position to the position of the floor belonging to the task to be performed. We also introduced a variable which determines the number of jobs an elevator currently has. This indicator is deemed the second most important variable because an even spreading of tasks will lead to an overall more efficient handling of requests. A car that has no jobs at all (jobLess) gets a 'bonus' mark i.e. will generate a higher bid value than other cars. The final variable used in calculating bids is onRoute meaning the car is traveling in the direction of the floor belonging to the task to be performed. 
 
 The above described MAS design can be captured into a single main formula for generating a bid value:
